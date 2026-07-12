@@ -1,5 +1,5 @@
 // ============================================================
-//  Spin the Wheel!  — a kid-friendly name picker
+//  Spin the Wheel!  — a kid-friendly name & reward picker
 //  Everything is self-contained: no external files or network.
 //  Sound effects are synthesized with the Web Audio API.
 // ============================================================
@@ -7,16 +7,45 @@
 (() => {
   "use strict";
 
-  // ---------- State ----------
-  const STORAGE_KEY = "spinwheel.names";
-  const DEFAULT_NAMES = ["Mum", "Dad", "Alex", "Sam", "Charlie", "Jamie"];
+  // ---------- Two wheels: names and rewards ----------
+  const WHEELS = {
+    names: {
+      storageKey: "spinwheel.names",
+      defaults: ["Mum", "Dad", "Alex", "Sam", "Charlie", "Jamie"],
+      panelTitle: "Names",
+      placeholder: "Type a name…",
+      winnerLabel: "The winner is…",
+      removeLabel: "Remove the winner after each spin",
+    },
+    rewards: {
+      storageKey: "spinwheel.rewards",
+      defaults: [
+        "Extra screen time", "Choose dinner", "Stay up 15 min",
+        "Ice cream 🍦", "Pick a movie 🎬", "No chores today",
+        "Choose the music", "Small treat 🍬",
+      ],
+      panelTitle: "Rewards",
+      placeholder: "Type a reward…",
+      winnerLabel: "You won…",
+      removeLabel: "Remove the reward once it's won",
+    },
+  };
 
-  let names = loadNames();
-  let rotation = 0;        // current wheel angle (radians)
+  let mode = "names";            // active wheel
   let spinning = false;
   let soundOn = true;
 
-  // Bright, kid-friendly palette (repeats if there are many names)
+  // Per-wheel data: items + current rotation angle.
+  const state = {
+    names: { items: loadItems("names"), rotation: 0 },
+    rewards: { items: loadItems("rewards"), rotation: 0 },
+  };
+
+  // Convenience accessors for the active wheel.
+  const cur = () => state[mode];
+  const cfg = () => WHEELS[mode];
+
+  // Bright, kid-friendly palette (repeats if there are many items)
   const COLORS = [
     "#FF6B6B", "#FFD93D", "#6BCB77", "#4D96FF", "#B983FF", "#FF9F45",
     "#FF6FB5", "#00C2CB", "#F97C7C", "#A8E063", "#5C7CFA", "#FDA085",
@@ -37,8 +66,13 @@
   const removeWinnerChk = document.getElementById("removeWinner");
   const winnerModal = document.getElementById("winnerModal");
   const winnerTitle = document.getElementById("winnerTitle");
+  const winnerLabel = document.getElementById("winnerLabel");
   const closeModal = document.getElementById("closeModal");
   const confettiCanvas = document.getElementById("confettiCanvas");
+  const tabNames = document.getElementById("tabNames");
+  const tabRewards = document.getElementById("tabRewards");
+  const panelTitle = document.getElementById("panelTitle");
+  const removeLabel = document.getElementById("removeLabel");
 
   // ============================================================
   //  Sound — synthesized with Web Audio API
@@ -90,7 +124,7 @@
     });
   }
 
-  // Soft click when adding a name.
+  // Soft click when adding an item.
   function playBlip() {
     if (!soundOn) return;
     const ac = getAudio();
@@ -110,17 +144,17 @@
   // ============================================================
   //  Storage
   // ============================================================
-  function loadNames() {
+  function loadItems(which) {
     try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-      if (Array.isArray(saved) && saved.length) return saved;
+      const saved = JSON.parse(localStorage.getItem(WHEELS[which].storageKey));
+      if (Array.isArray(saved)) return saved;
     } catch (e) { /* ignore */ }
-    return [...DEFAULT_NAMES];
+    return [...WHEELS[which].defaults];
   }
 
-  function saveNames() {
+  function saveItems() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(names));
+      localStorage.setItem(cfg().storageKey, JSON.stringify(cur().items));
     } catch (e) { /* ignore */ }
   }
 
@@ -130,13 +164,15 @@
   function colorFor(i) { return COLORS[i % COLORS.length]; }
 
   function drawWheel() {
+    const items = cur().items;
+    const rotation = cur().rotation;
     const size = canvas.width;
     const cx = size / 2;
     const cy = size / 2;
     const r = size / 2 - 4;
     ctx.clearRect(0, 0, size, size);
 
-    if (names.length === 0) {
+    if (items.length === 0) {
       ctx.fillStyle = "#e9e9f2";
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
@@ -145,11 +181,11 @@
       ctx.font = "bold 22px 'Baloo 2', sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText("Add some names!", cx, cy);
+      ctx.fillText("Add some " + cfg().panelTitle.toLowerCase() + "!", cx, cy);
       return;
     }
 
-    const n = names.length;
+    const n = items.length;
     const seg = (Math.PI * 2) / n;
 
     for (let i = 0; i < n; i++) {
@@ -175,10 +211,10 @@
       ctx.fillStyle = "#ffffff";
       ctx.shadowColor = "rgba(0,0,0,0.35)";
       ctx.shadowBlur = 3;
-      const fontSize = Math.max(12, Math.min(30, 260 / n + 10));
+      const fontSize = Math.max(11, Math.min(28, 240 / n + 9));
       ctx.font = `bold ${fontSize}px 'Baloo 2', sans-serif`;
-      let label = names[i];
-      const maxLen = n > 12 ? 8 : 14;
+      let label = items[i];
+      const maxLen = n > 12 ? 9 : 16;
       if (label.length > maxLen) label = label.slice(0, maxLen - 1) + "…";
       ctx.fillText(label, r - 16, 0);
       ctx.restore();
@@ -196,11 +232,12 @@
   // ============================================================
   function spin() {
     if (spinning) return;
-    if (names.length === 0) {
+    const items = cur().items;
+    if (items.length === 0) {
       nameInput.focus();
       return;
     }
-    if (names.length === 1) {
+    if (items.length === 1) {
       announceWinner(0);
       return;
     }
@@ -209,34 +246,32 @@
     spinning = true;
     spinBtn.disabled = true;
 
-    const n = names.length;
+    const n = items.length;
     const seg = (Math.PI * 2) / n;
 
     // Pick a random target segment, land its center under the pointer (right, angle 0).
     const winnerIndex = Math.floor(Math.random() * n);
     const extraTurns = 5 + Math.floor(Math.random() * 4); // 5–8 full turns
-    // Angle so that segment center aligns with pointer at 0 radians.
     const targetCenter = -(winnerIndex * seg + seg / 2);
-    const finalRotation =
+    const startRotation = cur().rotation;
+    const totalDelta =
       extraTurns * Math.PI * 2 +
       targetCenter -
-      (rotation % (Math.PI * 2));
+      (startRotation % (Math.PI * 2));
 
-    const startRotation = rotation;
-    const totalDelta = finalRotation;
     const duration = 4200 + Math.random() * 800;
     const startTime = performance.now();
-
     let lastTickSeg = -1;
 
     function frame(now) {
       const elapsed = now - startTime;
       const t = Math.min(elapsed / duration, 1);
       const eased = easeOutCubic(t);
-      rotation = startRotation + totalDelta * eased;
+      cur().rotation = startRotation + totalDelta * eased;
 
       // Tick sound as each boundary crosses the pointer.
-      const currentSeg = Math.floor(((-rotation % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2) / seg);
+      const rot = cur().rotation;
+      const currentSeg = Math.floor(((-rot % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2) / seg);
       if (currentSeg !== lastTickSeg) {
         lastTickSeg = currentSeg;
         playTick();
@@ -258,36 +293,39 @@
   function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
 
   function announceWinner(index) {
-    const winner = names[index];
+    const items = cur().items;
+    const winner = items[index];
+    winnerLabel.textContent = cfg().winnerLabel;
     winnerTitle.textContent = winner;
     winnerModal.classList.remove("hidden");
     playFanfare();
     launchConfetti();
 
-    if (removeWinnerChk.checked && names.length > 1) {
-      names.splice(index, 1);
-      saveNames();
-      renderNames();
-      rotation = 0;
+    if (removeWinnerChk.checked && items.length > 1) {
+      items.splice(index, 1);
+      saveItems();
+      renderItems();
+      cur().rotation = 0;
       drawWheel();
     }
   }
 
   // ============================================================
-  //  Names UI
+  //  Items UI
   // ============================================================
-  function renderNames() {
+  function renderItems() {
+    const items = cur().items;
     nameList.innerHTML = "";
-    nameCount.textContent = names.length;
+    nameCount.textContent = items.length;
 
-    if (names.length === 0) {
+    if (items.length === 0) {
       const li = document.createElement("li");
       li.className = "empty-hint";
-      li.textContent = "No names yet — add some above! 👆";
+      li.textContent = "Nothing yet — add some above! 👆";
       li.style.background = "transparent";
       nameList.appendChild(li);
     } else {
-      names.forEach((name, i) => {
+      items.forEach((name, i) => {
         const li = document.createElement("li");
 
         const swatch = document.createElement("span");
@@ -304,9 +342,9 @@
         x.title = "Remove";
         x.setAttribute("aria-label", "Remove " + name);
         x.addEventListener("click", () => {
-          names.splice(i, 1);
-          saveNames();
-          renderNames();
+          items.splice(i, 1);
+          saveItems();
+          renderItems();
           drawWheel();
         });
 
@@ -317,13 +355,31 @@
     drawWheel();
   }
 
-  function addName(raw) {
+  function addItem(raw) {
     const name = raw.trim();
     if (!name) return;
-    names.push(name);
-    saveNames();
-    renderNames();
+    cur().items.push(name);
+    saveItems();
+    renderItems();
     playBlip();
+  }
+
+  // ============================================================
+  //  Switch between the two wheels
+  // ============================================================
+  function switchMode(next) {
+    if (spinning || mode === next) return;
+    mode = next;
+    const isNames = mode === "names";
+    tabNames.classList.toggle("active", isNames);
+    tabRewards.classList.toggle("active", !isNames);
+    tabNames.setAttribute("aria-selected", String(isNames));
+    tabRewards.setAttribute("aria-selected", String(!isNames));
+
+    panelTitle.textContent = cfg().panelTitle;
+    nameInput.placeholder = cfg().placeholder;
+    removeLabel.textContent = cfg().removeLabel;
+    renderItems();
   }
 
   // ============================================================
@@ -386,31 +442,34 @@
   // ============================================================
   spinBtn.addEventListener("click", spin);
   canvas.addEventListener("click", spin);
+  tabNames.addEventListener("click", () => switchMode("names"));
+  tabRewards.addEventListener("click", () => switchMode("rewards"));
 
   addForm.addEventListener("submit", (e) => {
     e.preventDefault();
-    addName(nameInput.value);
+    addItem(nameInput.value);
     nameInput.value = "";
     nameInput.focus();
   });
 
   shuffleBtn.addEventListener("click", () => {
-    for (let i = names.length - 1; i > 0; i--) {
+    const items = cur().items;
+    for (let i = items.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [names[i], names[j]] = [names[j], names[i]];
+      [items[i], items[j]] = [items[j], items[i]];
     }
-    saveNames();
-    renderNames();
+    saveItems();
+    renderItems();
     playBlip();
   });
 
   clearBtn.addEventListener("click", () => {
-    if (names.length === 0) return;
-    if (confirm("Remove all names?")) {
-      names = [];
-      saveNames();
-      rotation = 0;
-      renderNames();
+    if (cur().items.length === 0) return;
+    if (confirm("Remove all " + cfg().panelTitle.toLowerCase() + "?")) {
+      cur().items = [];
+      saveItems();
+      cur().rotation = 0;
+      renderItems();
     }
   });
 
@@ -451,6 +510,6 @@
   });
 
   // ---------- Init ----------
-  renderNames();
+  renderItems();
   drawWheel();
 })();

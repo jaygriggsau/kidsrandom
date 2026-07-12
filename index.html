@@ -12,8 +12,13 @@
   <div class="app">
     <header class="app-header">
       <h1>🎡 Spin the Wheel!</h1>
-      <p class="subtitle">Add names, give it a spin, and see who wins!</p>
+      <p class="subtitle">Add names or rewards, give it a spin, and see what you get!</p>
     </header>
+
+    <nav class="tabs" role="tablist" aria-label="Choose a wheel">
+      <button id="tabNames" class="tab active" role="tab" aria-selected="true">🧑‍🤝‍🧑 Name Wheel</button>
+      <button id="tabRewards" class="tab" role="tab" aria-selected="false">🎁 Reward Wheel</button>
+    </nav>
 
     <main class="main">
       <!-- Wheel -->
@@ -29,13 +34,13 @@
         </div>
       </section>
 
-      <!-- Names panel -->
-      <section class="panel" aria-label="Manage names">
-        <h2>Names <span id="nameCount" class="count-badge">0</span></h2>
+      <!-- Items panel (names or rewards, depending on the active wheel) -->
+      <section class="panel" aria-label="Manage items">
+        <h2><span id="panelTitle">Names</span> <span id="nameCount" class="count-badge">0</span></h2>
 
         <form id="addForm" class="add-row" autocomplete="off">
-          <input id="nameInput" type="text" placeholder="Type a name…" maxlength="24" aria-label="New name" />
-          <button type="submit" class="add-btn" aria-label="Add name">➕ Add</button>
+          <input id="nameInput" type="text" placeholder="Type a name…" maxlength="28" aria-label="New item" />
+          <button type="submit" class="add-btn" aria-label="Add">➕ Add</button>
         </form>
 
         <ul id="nameList" class="name-list" aria-live="polite"></ul>
@@ -47,7 +52,7 @@
 
         <label class="toggle-row">
           <input type="checkbox" id="removeWinner" />
-          Remove the winner after each spin
+          <span id="removeLabel">Remove the winner after each spin</span>
         </label>
       </section>
     </main>
@@ -59,7 +64,7 @@
   <div id="winnerModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="winnerTitle">
     <div class="modal-card">
       <div class="confetti-emojis" aria-hidden="true">🎉🎊✨🥳🌟</div>
-      <p class="winner-label">The winner is…</p>
+      <p class="winner-label" id="winnerLabel">The winner is…</p>
       <h2 id="winnerTitle" class="winner-name">—</h2>
       <button id="closeModal" class="add-btn">Spin Again</button>
     </div>

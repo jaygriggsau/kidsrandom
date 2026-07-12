@@ -49,6 +49,34 @@ body {
   opacity: 0.95;
 }
 
+.tabs {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.tab {
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 999px;
+  padding: 10px 22px;
+  font-weight: 800;
+  font-size: 1.05rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.12s, background 0.15s;
+}
+.tab:hover { transform: translateY(-2px); }
+.tab.active {
+  background: #fff;
+  color: var(--bg1);
+  border-color: #fff;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+}
+
 .main {
   display: grid;
   grid-template-columns: 1fr 340px;
