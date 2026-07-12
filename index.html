@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🎡 Spin the Wheel!</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎡</text></svg>" />
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <h1>🎡 Spin the Wheel!</h1>
+      <p class="subtitle">Add names, give it a spin, and see who wins!</p>
+    </header>
+
+    <main class="main">
+      <!-- Wheel -->
+      <section class="wheel-area">
+        <div class="wheel-wrap">
+          <div class="pointer" aria-hidden="true">▶</div>
+          <canvas id="wheel" width="500" height="500" role="img" aria-label="Spinning wheel of names"></canvas>
+          <button id="spinBtn" class="spin-btn" aria-label="Spin the wheel">SPIN</button>
+        </div>
+        <div class="wheel-controls">
+          <button id="soundBtn" class="icon-btn" title="Toggle sound" aria-pressed="true">🔊 Sound On</button>
+          <button id="fullscreenBtn" class="icon-btn" title="Fullscreen">⛶ Fullscreen</button>
+        </div>
+      </section>
+
+      <!-- Names panel -->
+      <section class="panel" aria-label="Manage names">
+        <h2>Names <span id="nameCount" class="count-badge">0</span></h2>
+
+        <form id="addForm" class="add-row" autocomplete="off">
+          <input id="nameInput" type="text" placeholder="Type a name…" maxlength="24" aria-label="New name" />
+          <button type="submit" class="add-btn" aria-label="Add name">➕ Add</button>
+        </form>
+
+        <ul id="nameList" class="name-list" aria-live="polite"></ul>
+
+        <div class="bulk-row">
+          <button id="shuffleBtn" class="small-btn">🔀 Shuffle</button>
+          <button id="clearBtn" class="small-btn danger">🗑️ Clear All</button>
+        </div>
+
+        <label class="toggle-row">
+          <input type="checkbox" id="removeWinner" />
+          Remove the winner after each spin
+        </label>
+      </section>
+    </main>
+
+    <footer class="app-footer">Made for spinning fun 🌈</footer>
+  </div>
+
+  <!-- Winner popup -->
+  <div id="winnerModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="winnerTitle">
+    <div class="modal-card">
+      <div class="confetti-emojis" aria-hidden="true">🎉🎊✨🥳🌟</div>
+      <p class="winner-label">The winner is…</p>
+      <h2 id="winnerTitle" class="winner-name">—</h2>
+      <button id="closeModal" class="add-btn">Spin Again</button>
+    </div>
+  </div>
+
+  <canvas id="confettiCanvas" class="confetti-canvas" aria-hidden="true"></canvas>
+
+  <script src="script.js"></script>
+</body>
+</html>
