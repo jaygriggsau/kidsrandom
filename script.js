@@ -202,21 +202,41 @@
       ctx.lineWidth = 3;
       ctx.stroke();
 
-      // Label
+      // Label — kept in the outer band so it never slides under the SPIN button.
       ctx.save();
       ctx.translate(cx, cy);
       ctx.rotate(start + seg / 2);
       ctx.textAlign = "right";
       ctx.textBaseline = "middle";
-      ctx.fillStyle = "#ffffff";
-      ctx.shadowColor = "rgba(0,0,0,0.35)";
-      ctx.shadowBlur = 3;
-      const fontSize = Math.max(11, Math.min(28, 240 / n + 9));
-      ctx.font = `bold ${fontSize}px 'Baloo 2', sans-serif`;
+
+      // Radial space available for text: from just inside the rim (outerX)
+      // inward to the edge of the hub/SPIN button (innerX). The button covers
+      // ~22% of the diameter, i.e. 0.22 * r from the centre.
+      const outerX = r - 18;
+      const innerX = r * 0.30;
+      const maxWidth = outerX - innerX;
+
+      // Start big, then shrink to fit; only truncate if it's still too wide
+      // at the smallest readable size.
+      let fontSize = Math.max(12, Math.min(30, 240 / n + 10));
       let label = items[i];
-      const maxLen = n > 12 ? 9 : 16;
-      if (label.length > maxLen) label = label.slice(0, maxLen - 1) + "…";
-      ctx.fillText(label, r - 16, 0);
+      ctx.font = `800 ${fontSize}px 'Baloo 2', sans-serif`;
+      while (ctx.measureText(label).width > maxWidth && fontSize > 12) {
+        fontSize -= 1;
+        ctx.font = `800 ${fontSize}px 'Baloo 2', sans-serif`;
+      }
+      while (label.length > 1 && ctx.measureText(label).width > maxWidth) {
+        label = label.slice(0, -1);
+      }
+      if (label !== items[i]) label = label.replace(/.$/, "…");
+
+      // Dark outline under white fill = readable on every bright colour.
+      ctx.lineJoin = "round";
+      ctx.lineWidth = Math.max(3, fontSize * 0.18);
+      ctx.strokeStyle = "rgba(0,0,0,0.55)";
+      ctx.strokeText(label, outerX, 0);
+      ctx.fillStyle = "#ffffff";
+      ctx.fillText(label, outerX, 0);
       ctx.restore();
     }
 

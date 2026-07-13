@@ -114,11 +114,11 @@ body {
 .pointer {
   position: absolute;
   top: 50%;
-  right: -14px;
+  right: -10px;
   transform: translateY(-50%);
-  font-size: 2.6rem;
+  font-size: 2.8rem;
   color: #fff;
-  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.4));
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
   z-index: 3;
   pointer-events: none;
 }
